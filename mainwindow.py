@@ -1,11 +1,11 @@
 #============================================================
-#=>             pyMicroDrum v0.2
+#=>             pyMicroDrum v0.2.1
 #=>             www.microdrum.net
 #=>              CC BY-NC-SA 3.0
 #=>
 #=> Massimo Bernava
 #=> massimo.bernava@gmail.com
-#=> 2014-03-15
+#=> 2014-09-12
 #=>                                                      
 #=============================================================
 
@@ -31,6 +31,9 @@ except ImportError:
 
 midi_out = rtmidi.MidiOut()
 
+#serialSpeed=31250
+serialSpeed=115200
+
 if fluidsynth_available:
         fs = fluidsynth.Synth()
         fs.start()
@@ -40,12 +43,14 @@ if fluidsynth_available:
 
 
 class PIN(Structure):
-	_fields_ = [("name", c_char*20),("type", c_int),("note", c_int),("thresold", c_int),("scantime", c_int),("masktime", c_int),("retrigger", c_int),("gain", c_int),("curve", c_int),("curveform", c_int),("xtalk", c_int),("xtalkgroup", c_int),("channel", c_int)]
+	_fields_ = [("name", c_char*20),("type", c_int),("note", c_int),("thresold", c_int),("scantime", c_int),("masktime", c_int),("retrigger", c_int),\
+                    ("gain", c_int),("curve", c_int),("curveform", c_int),("xtalk", c_int),("xtalkgroup", c_int),("channel", c_int)]
 
 pinArray=PIN*48
 noteArray="C","C#","D","D#","E","F","F#","G","G#","A","A#","B"
 
-Permutation = [ 0x72, 0x32, 0x25, 0x64, 0x64, 0x4f, 0x1e, 0x26, 0x2a, 0x74, 0x37, 0x09, 0x57, 0x02, 0x28, 0x08, 0x14, 0x23, 0x49, 0x10, 0x62, 0x02, 0x1e, 0x7e, 0x5d, 0x1b, 0x27, 0x76, 0x7a, 0x76, 0x05, 0x2e ]
+Permutation = [ 0x72, 0x32, 0x25, 0x64, 0x64, 0x4f, 0x1e, 0x26, 0x2a, 0x74, 0x37, 0x09, 0x57, 0x02, 0x28,\
+                0x08, 0x14, 0x23, 0x49, 0x10, 0x62, 0x02, 0x1e, 0x7e, 0x5d, 0x1b, 0x27, 0x76, 0x7a, 0x76, 0x05, 0x2e ]
 
 
 class MainWindow ( QMainWindow ):
@@ -69,7 +74,12 @@ class MainWindow ( QMainWindow ):
 		self.pinType[2]="HHC"
 		self.pinType[127]="Disabled"
 
-                self.pbPinArray=self.ui.pbPin0,self.ui.pbPin1,self.ui.pbPin2,self.ui.pbPin3,self.ui.pbPin4,self.ui.pbPin5,self.ui.pbPin6,self.ui.pbPin7
+                self.pbPinArray=self.ui.pbPin0,self.ui.pbPin1,self.ui.pbPin2,self.ui.pbPin3,self.ui.pbPin4,self.ui.pbPin5,self.ui.pbPin6,self.ui.pbPin7,\
+                self.ui.pbPin0_2,self.ui.pbPin1_2,self.ui.pbPin2_2,self.ui.pbPin3_2,self.ui.pbPin4_2,self.ui.pbPin5_2,self.ui.pbPin6_2,self.ui.pbPin7_2,\
+                self.ui.pbPin0_3,self.ui.pbPin1_3,self.ui.pbPin2_3,self.ui.pbPin3_3,self.ui.pbPin4_3,self.ui.pbPin5_3,self.ui.pbPin6_3,self.ui.pbPin7_3,\
+                self.ui.pbPin0_4,self.ui.pbPin1_4,self.ui.pbPin2_4,self.ui.pbPin3_4,self.ui.pbPin4_4,self.ui.pbPin5_4,self.ui.pbPin6_4,self.ui.pbPin7_4,\
+                self.ui.pbPin0_5,self.ui.pbPin1_5,self.ui.pbPin2_5,self.ui.pbPin3_5,self.ui.pbPin4_5,self.ui.pbPin5_5,self.ui.pbPin6_5,self.ui.pbPin7_5,\
+                self.ui.pbPin0_6,self.ui.pbPin1_6,self.ui.pbPin2_6,self.ui.pbPin3_6,self.ui.pbPin4_6,self.ui.pbPin5_6,self.ui.pbPin6_6,self.ui.pbPin7_6
         #Pin
 		try:
 			f = open("pins.ini", "r")
@@ -141,7 +151,7 @@ class MainWindow ( QMainWindow ):
                         thread.start_new_thread( self.read_midi, ("MIDI_Thread", 2, ) )
 			port=str(self.ui.cbSerial.currentText())
 			#print(port)
-			self.ser = serial.Serial(port, 31250, 8, "N", 1, timeout=None)
+			self.ser = serial.Serial(port, serialSpeed, 8, "N", 1, timeout=None)
 
 		elif self.ser.isOpen():
 			self.ser.close()
@@ -155,7 +165,10 @@ class MainWindow ( QMainWindow ):
                                 self.pbPinArray[i].setFormat("    "+self.pins[i].name+" %v    ")
                                 self.pbPinArray[i].setValue(data3)
                 
-                self.ui.lMIDIHistory.addItem("NOTE ON ("+str(data2)+","+str(data3)+")")
+                if (data1&0xF0)==0x90:
+                    self.ui.lMIDIHistory.addItem("NOTE ON ("+str(data2)+","+str(data3)+")")
+                elif (data1&0xF0)==0xB0:
+                    self.ui.lMIDIHistory.addItem("CC ("+str(data2)+","+str(data3)+")")
                 if self.ui.lMIDIHistory.count() > 20:
                         self.ui.lMIDIHistory.takeItem(0)
                 self.ui.lMIDIHistory.setCurrentRow(self.ui.lMIDIHistory.count()-1)
@@ -308,7 +321,10 @@ class MainWindow ( QMainWindow ):
 			self.ser.write(txData)
 			
 	def downloadType(self):
-		data = 0xF0,0x77,0x03,self.ui.tPinList.currentRow(),0x0D,self.pins[self.ui.tPinList.currentRow()].type,0xF7
+                code=0x03
+                if self.ui.ckSave.isChecked()==True :
+                        code=0x04
+		data = 0xF0,0x77,code,self.ui.tPinList.currentRow(),0x0D,self.pins[self.ui.tPinList.currentRow()].type,0xF7
 		print(data)
 		txData = struct.pack("B"*len(data), *data)
 		if self.ser.isOpen():
@@ -365,49 +381,70 @@ class MainWindow ( QMainWindow ):
 
  			
         def downloadCurve(self):
-                data = 0xF0,0x77,0x03,self.ui.tPinList.currentRow(),0x05,self.pins[self.ui.tPinList.currentRow()].curve,0xF7
+                code=0x03
+                if self.ui.ckSave.isChecked()==True :
+                        code=0x04
+                data = 0xF0,0x77,code,self.ui.tPinList.currentRow(),0x05,self.pins[self.ui.tPinList.currentRow()].curve,0xF7
 		print(data)
 		txData = struct.pack("B"*len(data), *data)
 		if self.ser.isOpen():
 			self.ser.write(txData)
 
         def downloadCurveform(self):
-                data = 0xF0,0x77,0x03,self.ui.tPinList.currentRow(),0x08,self.pins[self.ui.tPinList.currentRow()].curveform,0xF7
+                code=0x03
+                if self.ui.ckSave.isChecked()==True :
+                        code=0x04
+                data = 0xF0,0x77,code,self.ui.tPinList.currentRow(),0x08,self.pins[self.ui.tPinList.currentRow()].curveform,0xF7
 		print(data)
 		txData = struct.pack("B"*len(data), *data)
 		if self.ser.isOpen():
 			self.ser.write(txData)
 
         def downloadXtalk(self):
-                data = 0xF0,0x77,0x03,self.ui.tPinList.currentRow(),0x06,self.pins[self.ui.tPinList.currentRow()].xtalk,0xF7
+                code=0x03
+                if self.ui.ckSave.isChecked()==True :
+                        code=0x04
+                data = 0xF0,0x77,code,self.ui.tPinList.currentRow(),0x06,self.pins[self.ui.tPinList.currentRow()].xtalk,0xF7
 		print(data)
 		txData = struct.pack("B"*len(data), *data)
 		if self.ser.isOpen():
 			self.ser.write(txData)
 
         def downloadXtalkgroup(self):
-                data = 0xF0,0x77,0x03,self.ui.tPinList.currentRow(),0x07,self.pins[self.ui.tPinList.currentRow()].xtalkgroup,0xF7
+                code=0x03
+                if self.ui.ckSave.isChecked()==True :
+                        code=0x04
+                data = 0xF0,0x77,code,self.ui.tPinList.currentRow(),0x07,self.pins[self.ui.tPinList.currentRow()].xtalkgroup,0xF7
 		print(data)
 		txData = struct.pack("B"*len(data), *data)
 		if self.ser.isOpen():
 			self.ser.write(txData)
 
         def downloadChannel(self):
-                data = 0xF0,0x77,0x03,self.ui.tPinList.currentRow(),0x0E,self.pins[self.ui.tPinList.currentRow()].channel,0xF7
+                code=0x03
+                if self.ui.ckSave.isChecked()==True :
+                        code=0x04
+                data = 0xF0,0x77,code,self.ui.tPinList.currentRow(),0x0E,self.pins[self.ui.tPinList.currentRow()].channel,0xF7
 		print(data)
 		txData = struct.pack("B"*len(data), *data)
 		if self.ser.isOpen():
 			self.ser.write(txData)
 
         def downloadGain(self):
-                data = 0xF0,0x77,0x03,self.ui.tPinList.currentRow(),0x09,self.pins[self.ui.tPinList.currentRow()].gain,0xF7
+                code=0x03
+                if self.ui.ckSave.isChecked()==True :
+                        code=0x04
+                data = 0xF0,0x77,code,self.ui.tPinList.currentRow(),0x09,self.pins[self.ui.tPinList.currentRow()].gain,0xF7
 		print(data)
 		txData = struct.pack("B"*len(data), *data)
 		if self.ser.isOpen():
 			self.ser.write(txData)
         
 	def downloadNote(self):
-		data = 0xF0,0x77,0x03,self.ui.tPinList.currentRow(),0x00,self.pins[self.ui.tPinList.currentRow()].note,0xF7
+                code=0x03
+                if self.ui.ckSave.isChecked()==True :
+                        code=0x04
+		data = 0xF0,0x77,code,self.ui.tPinList.currentRow(),0x00,self.pins[self.ui.tPinList.currentRow()].note,0xF7
 		print(data)
 		txData = struct.pack("B"*len(data), *data)
 		if self.ser.isOpen():
@@ -421,7 +458,10 @@ class MainWindow ( QMainWindow ):
 			self.ser.write(txData)
 
 	def downloadThresold(self):
-		data = 0xF0,0x77,0x03,self.ui.tPinList.currentRow(),0x01,self.pins[self.ui.tPinList.currentRow()].thresold,0xF7
+                code=0x03
+                if self.ui.ckSave.isChecked()==True :
+                        code=0x04
+		data = 0xF0,0x77,code,self.ui.tPinList.currentRow(),0x01,self.pins[self.ui.tPinList.currentRow()].thresold,0xF7
 		print(data)
 		txData = struct.pack("B"*len(data), *data)
 		if self.ser.isOpen():
@@ -435,7 +475,10 @@ class MainWindow ( QMainWindow ):
 			self.ser.write(txData)
 			
         def downloadScantime(self):
-                data = 0xF0,0x77,0x03,self.ui.tPinList.currentRow(),0x02,self.pins[self.ui.tPinList.currentRow()].scantime,0xF7
+                code=0x03
+                if self.ui.ckSave.isChecked()==True :
+                        code=0x04
+                data = 0xF0,0x77,code,self.ui.tPinList.currentRow(),0x02,self.pins[self.ui.tPinList.currentRow()].scantime,0xF7
 		print(data)
 		txData = struct.pack("B"*len(data), *data)
 		if self.ser.isOpen():
@@ -449,7 +492,10 @@ class MainWindow ( QMainWindow ):
 			self.ser.write(txData)
 			
         def downloadMasktime(self):
-                data = 0xF0,0x77,0x03,self.ui.tPinList.currentRow(),0x03,self.pins[self.ui.tPinList.currentRow()].masktime,0xF7
+                code=0x03
+                if self.ui.ckSave.isChecked()==True :
+                        code=0x04
+                data = 0xF0,0x77,code,self.ui.tPinList.currentRow(),0x03,self.pins[self.ui.tPinList.currentRow()].masktime,0xF7
 		print(data)
 		txData = struct.pack("B"*len(data), *data)
 		if self.ser.isOpen():
@@ -463,7 +509,10 @@ class MainWindow ( QMainWindow ):
 			self.ser.write(txData)
 			
         def downloadRetrigger(self):
-                data = 0xF0,0x77,0x03,self.ui.tPinList.currentRow(),0x04,self.pins[self.ui.tPinList.currentRow()].retrigger,0xF7
+                code=0x03
+                if self.ui.ckSave.isChecked()==True :
+                        code=0x04
+                data = 0xF0,0x77,code,self.ui.tPinList.currentRow(),0x04,self.pins[self.ui.tPinList.currentRow()].retrigger,0xF7
 		print(data)
 		txData = struct.pack("B"*len(data), *data)
 		if self.ser.isOpen():
@@ -498,9 +547,8 @@ class MainWindow ( QMainWindow ):
 				rxData = self.ser.read(1)
 				if len(rxData) <= 0:
                                         return
-				data = struct.unpack("B"*len(rxData), rxData)
-				data1=data[0]
-				if data1==0xF0:
+				cmd=rxData[0]
+				if cmd==chr(0xF0):
 					rxData = self.ser.read(6)
 					data = struct.unpack("B"*len(rxData), rxData)
 					if data[1]==0x02: #ASKPARAM
@@ -539,16 +587,16 @@ class MainWindow ( QMainWindow ):
                                                         self.ser.write(txData)
 				else:
 					rxData = self.ser.read(2)
-					data = struct.unpack("B"*len(rxData), rxData)
+					note = ord(rxData[0])
+					vel = ord(rxData[1])
 					if self.ui.rbMIDI.isChecked():
-                                                midi_out.send_message([0x90, data[0], data[1]]) # Note on
-                                        elif fluidsynth_available & self.ui.rbFluidsynth.isChecked():
-                                                fs.noteon(0, 60, 30)
-					#self.ui.pbPin0.setValue(data[1])
-					self.updateMonitor.emit(data1,data[0],data[1])
+						midi_out.send_message([ord(cmd), note, vel]) # Note on
+					elif fluidsynth_available & self.ui.rbFluidsynth.isChecked():
+						fs.noteon(0, 60, 30)
+					self.updateMonitor.emit(cmd,note,vel)
 
-				print(data)
-				sys.stdout.flush()
+				#print(data)
+				#sys.stdout.flush()
 			else:
 				time.sleep(delay)
 

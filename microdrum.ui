@@ -23,6 +23,11 @@
     <height>480</height>
    </size>
   </property>
+  <property name="font">
+   <font>
+    <family>MS Shell Dlg 2</family>
+   </font>
+  </property>
   <property name="windowTitle">
    <string>microDrum</string>
   </property>
@@ -59,11 +64,24 @@
       <height>23</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <pointsize>14</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QProgressBar::chunk {background-color: qlineargradient(spread:pad, x1:0.142045, y1:0.421, x2:1, y2:0, stop:0 rgba(255, 0, 0, 255), stop:1 rgba(255, 255, 255, 0));}</string>
+    </property>
     <property name="value">
-     <number>24</number>
+     <number>0</number>
     </property>
     <property name="textDirection">
      <enum>QProgressBar::TopToBottom</enum>
+    </property>
+    <property name="format">
+     <string/>
     </property>
    </widget>
    <widget class="QTabWidget" name="tabState">
@@ -74,6 +92,11 @@
       <width>781</width>
       <height>431</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>MS Shell Dlg 2</family>
+     </font>
     </property>
     <property name="tabPosition">
      <enum>QTabWidget::West</enum>
@@ -1260,7 +1283,7 @@
        <bool>true</bool>
       </attribute>
       <attribute name="verticalHeaderVisible">
-       <bool>true</bool>
+       <bool>false</bool>
       </attribute>
       <attribute name="verticalHeaderDefaultSectionSize">
        <number>20</number>
@@ -3788,6 +3811,9 @@
      </widget>
     </widget>
     <widget class="QWidget" name="tab_4">
+     <property name="styleSheet">
+      <string notr="true"/>
+     </property>
      <attribute name="title">
       <string>About</string>
      </attribute>
